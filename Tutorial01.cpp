@@ -2,7 +2,7 @@
 #include <irrlicht.h>
 #include <irrKlang.h>
 #include <iostream>
-
+// authors: Ramin and Evgeny 
 using namespace irr;
 using namespace core;
 using namespace scene;

@@ -1,0 +1,16 @@
+Player 1
+ 
+W - move up
+S - move down
+
+Player 2
+ 
+O - move up
+L - move down
+
+ESC - close
+
+Left mouse click - to cotrol the ball
+(Just for debugging purpose, dont cheat :) )
+
+

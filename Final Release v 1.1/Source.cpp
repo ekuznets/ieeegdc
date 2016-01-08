@@ -57,8 +57,37 @@ irrklang::ISoundEngine* soundEngine = NULL;
 //function declarions
 void updateBallPosition(f32 dt);
 void updatePaddlePosition(f32 dt);
+void resetBall();
 
+void resetBall()
+{
 
+	// Reset the ball position, direction, and starting speed.
+	ballPos.X = (screenWidth / 2) - (ball->getSize().Width / 2);
+	ballPos.Y = (screenHeight / 2) - (ball->getSize().Height / 2);
+	srand(time(NULL));
+	int v1 = rand() % 3 + 3;
+	int v2 = rand() % 3 + 3;
+
+	double vd1 = v1 / 5.0;
+	double vd2 = v2 / 5.0;
+
+	int sign1 = rand() % 2;
+	int sign2 = rand() % 2;
+
+	if (sign1 == 1)
+	{
+		vd1 = vd1*(-1);
+	}
+	if (sign2 == 1)
+	{
+		vd2 = vd2*(-1);
+	}
+
+	ballDir.set(vd1, vd2);
+	ballSpeed = 0.3f;
+	ballDir.normalize();
+}
 void updateBallPosition(f32 dt) 
 {
 	//position = x + k*dt  //dt = delta time
@@ -72,11 +101,10 @@ void updateBallPosition(f32 dt)
 		((ballPos.Y + ball->getSize().Height) > paddle1Pos.Y) // Check if the ball has moved past the top edge of the paddle
 		&& (ballPos.Y < paddle1Pos.Y + paddle1->getSize().Height)) // Check if the ball has not moved past the bottom edge of the paddle
 	{
-		//reverse serection and slitly increase the ball speed
-		ballDir.X *= -1;
-		ballSpeed *= 1.001f;  //small constant for increase ball speed
-		// set a music to play when ball hit the boundary screen
-		soundEngine->play2D("impact.wav");
+		
+		ballDir.X *= -1; //reverse serection and slitly increase the ball speed
+		ballSpeed *= 1.05f;  //small constant for increase ball speed
+		soundEngine->play2D("assets/sounds/impact.wav"); // set a music to play when ball hit the boundary screen
 	}
 	// Collision detection for paddle 2
 	if ((ballPos.X + ball->getSize().Width > paddle2Pos.X) // Check if the ball has moved past the right edge of the paddle
@@ -89,68 +117,33 @@ void updateBallPosition(f32 dt)
 	{
 		//reverse serection and slitly increase the ball speed
 		ballDir.X *= -1;
-		ballSpeed *= 1.001f; // small constant for increase ball speed
+		ballSpeed *= 1.05f; // small constant for increase ball speed
 		// set a music to play when ball hit the boundary screen
-		soundEngine->play2D("impact.wav");
+		soundEngine->play2D("assets/sounds/impact.wav");
 	}
-
-	// old code for ball collision  can be removed 
-	//if (ballPos.X >= screenWidth - ball->getSize().Width || ballPos.X <= 0)
-	//{
-	//	ballDir.X *= -1;
-	//}
 
 	// reverse serection of the ball when it`s get collided with top/bottom walls
 	if (ballPos.Y >= screenHeight - ball->getSize().Height || ballPos.Y <= 0)
 	{
 		ballDir.Y *= -1;
 		// set a music to play when ball hit the boundary screen
-		soundEngine->play2D("ball.wav");
+		soundEngine->play2D("assets/sounds/ball.wav");
 	}
 
 	// modified ball score if puddle cross the screen
-	if ((ballPos.X + ball->getSize().Width > screenWidth && ballDir.X > 0)
-			|| (ballPos.X < 0) && ballDir.X < 0)
+	if (ballPos.X<0)
 	{
-		// Update player scores
-		if (ballPos.X >(screenWidth / 2))
-		{
-			// set a music to gong when ball is scored
+		// Update player scores		
 			player1Score++;
-			soundEngine->play2D("gong.mp3");
-		}
-		else
-		{
-			// set a music to gong when ball is scored
+			soundEngine->play2D("assets/sounds/gong.mp3"); // set a music to gong when ball is scored
+			resetBall();
+	}
+	if (ballPos.X > screenWidth - ball->getSize().Width)
+	{	
 			player2Score++;
-			soundEngine->play2D("gong.mp3");
-		}
+			soundEngine->play2D("assets/sounds/gong.mp3"); // set a music to gong when ball is scored
+			resetBall();
 
-		// Reset the ball position, direction, and starting speed.
-		ballPos.X = (screenWidth / 2) - (ball->getSize().Width / 2);
-		ballPos.Y = (screenHeight / 2) - (ball->getSize().Height / 2);
-		srand(time(NULL));
-		int v1 = rand() % 3 + 3;
-		int v2 = rand() % 3 + 3;
-
-		double vd1 = v1 / 5.0;
-		double vd2 = v2 / 5.0;
-
-		int sign1 = rand() % 2;
-		int sign2 = rand() % 2;
-
-		if (sign1 == 1)
-		{
-			vd1 = vd1*(-1);
-		}
-		if (sign2 == 1)
-		{
-			vd2 = vd2*(-1);
-		}
-
-		ballDir.set(vd1, vd2);
-		ballSpeed = 0.3f;
-		ballDir.normalize();
 	}
 
 }
@@ -180,7 +173,6 @@ void updatePaddlePosition(f32 dt)
 	{ 
 		paddle2Pos.Y += dt*paddle2Speed; 
 	}
-
 	//if (ballPos.X > )
 
 }
@@ -196,7 +188,11 @@ public:
 		for (u32 i = 0; i<irr::KEY_KEY_CODES_COUNT; i++)
 			KeyIsDown[i] = false;
 	}
-
+	// This is used to check whether a key is being held down
+	virtual bool IsKeyDown(EKEY_CODE keyCode) const
+	{
+		return KeyIsDown[keyCode];
+	}
 	virtual bool OnEvent(const irr::SEvent & event)
 	{
 		if (event.EventType == irr::EET_MOUSE_INPUT_EVENT)
@@ -243,6 +239,13 @@ private:
 	bool KeyIsDown[KEY_KEY_CODES_COUNT]; // array of keys true/false = pressed/ not pressed
 };
 
+EventReceiver pongEventReceiver; // declare an instance of event reciver
+
+bool exitFunction()
+{
+	return pongEventReceiver.IsKeyDown(KEY_ESCAPE);
+}
+
 int main()
 {
 	/*Here is a template for including all the nessesery paramiters into the code
@@ -267,16 +270,16 @@ int main()
 		);
 
 	// create an event reciver class to take user input from keyboard/mouse/joystick
-	EventReceiver pongEventReceiver;
+	
 	device->setEventReceiver(&pongEventReceiver);
 
 	// create a video driver for your game to render a screen
 	irr::video::IVideoDriver* driver = device->getVideoDriver();
 
 	// load a requared textures
-	ball = driver->getTexture("ball.png");
-	paddle1 = driver->getTexture("paddle1.png");
-	paddle2 = driver->getTexture("paddle2.png");
+	ball = driver->getTexture("assets/textures/ball.png");
+	paddle1 = driver->getTexture("assets/textures/paddle1.png");
+	paddle2 = driver->getTexture("assets/textures/paddle2.png");
 
 	/*do not worry about the code in this module
 	it is required for ball to move in every derection everytime you start the program
@@ -284,7 +287,7 @@ int main()
 
 	env = device->getGUIEnvironment();
 	irr::gui::IGUISkin* skin = env->getSkin();
-	irr::gui::IGUIFont* font = env->getFont("bigfont.png"); //loading the font from a file to display your characters on a screen
+	irr::gui::IGUIFont* font = env->getFont("assets/font/bigfont.png"); //loading the font from a file to display your characters on a screen
 	if (font)
 		skin->setFont(font);
 	skin->setFont(env->getBuiltInFont(), EGDF_TOOLTIP); // apply up this font to be used instead of default
@@ -399,6 +402,10 @@ int main()
 			video::SColor(255, 255, 255, 255),
 			1);
 		// call driver->endScene(); when all the rendering is done and ready for next loop
+		if (exitFunction() == true)// if we want to finish game press ESC, function will return state of button
+		{
+			device->closeDevice();
+		}			
 		driver->endScene();
 	}
 
